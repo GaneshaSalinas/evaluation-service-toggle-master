@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: evaluation-service-config
+  namespace: toggle-master
+data:
+  PORT: "8004"
+  REDIS_URL: "redis://redis:6379"
+  FLAG_SERVICE_URL: "http://flag-service:8002"
+  TARGETING_SERVICE_URL: "http://targeting-service:8003"
+  SERVICE_API_KEY: "tm_key_4c1ba858dafc0c25f0c06449ddb42dca613dd3619080a0bcddab39f09542f918"
+  AWS_SQS_URL: "https://sqs.us-east-1.amazonaws.com/581571885952/feature-evaluation-events"
+  AWS_REGION: "us-east-1"
