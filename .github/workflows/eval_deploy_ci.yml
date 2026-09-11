@@ -1,8 +1,10 @@
-name: Auth Service CI
+name: Evaluation Service CI
 
 on:
   workflow_dispatch:
+
   pull_request:
+
   push:
     branches:
       - aws-cloud-k8s
@@ -13,7 +15,7 @@ permissions:
 
 jobs:
   ci:
-    name: Auth Service CI
+    name: Evaluation Service CI
 
     uses: ramondata/CI-reusable-source/.github/workflows/ci-reusable.yml@v1.6.0
 
@@ -50,7 +52,7 @@ jobs:
           ssh-key: ${{ secrets.GITOPS_DEPLOY_KEY }}
           path: gitops
 
-      - name: Update auth-service image tag
+      - name: Update evaluation-service image tag
         env:
           IMAGE_TAG: ${{ needs.ci.outputs.image-tag }}
         run: |

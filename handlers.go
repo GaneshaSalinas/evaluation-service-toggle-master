@@ -15,7 +15,10 @@ type EvaluationResponse struct {
 func (a *App) healthHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(map[string]string{"status": "ok"})
+
+	if err := json.NewEncoder(w).Encode(map[string]string{"status": "ok"}); err != nil {
+		log.Printf("Erro ao codificar resposta do health check: %v", err)
+	}
 }
 
 func (a *App) evaluationHandler(w http.ResponseWriter, r *http.Request) {
@@ -26,7 +29,11 @@ func (a *App) evaluationHandler(w http.ResponseWriter, r *http.Request) {
 	flagName := r.URL.Query().Get("flag_name")
 
 	if userID == "" || flagName == "" {
-		http.Error(w, `{"error": "user_id e flag_name são obrigatórios"}`, http.StatusBadRequest)
+		http.Error(
+			w,
+			`{"error": "user_id e flag_name são obrigatórios"}`,
+			http.StatusBadRequest,
+		)
 		return
 	}
 
@@ -39,7 +46,11 @@ func (a *App) evaluationHandler(w http.ResponseWriter, r *http.Request) {
 		} else {
 			// Outros erros (serviços offline, etc)
 			log.Printf("Erro ao avaliar flag '%s': %v", flagName, err)
-			http.Error(w, `{"error": "Erro interno ao avaliar a flag"}`, http.StatusBadGateway)
+			http.Error(
+				w,
+				`{"error": "Erro interno ao avaliar a flag"}`,
+				http.StatusBadGateway,
+			)
 			return
 		}
 	}
@@ -50,9 +61,12 @@ func (a *App) evaluationHandler(w http.ResponseWriter, r *http.Request) {
 
 	// 4. Retornar a resposta
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(EvaluationResponse{
+
+	if err := json.NewEncoder(w).Encode(EvaluationResponse{
 		FlagName: flagName,
 		UserID:   userID,
 		Result:   result,
-	})
+	}); err != nil {
+		log.Printf("Erro ao codificar resposta da avaliação: %v", err)
+	}
 }
