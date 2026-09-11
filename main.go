@@ -7,9 +7,8 @@ import (
 	"os"
 	"time"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/sqs"
+	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/service/sqs"
 	"github.com/go-redis/redis/v8"
 	"github.com/joho/godotenv"
 )
@@ -20,7 +19,7 @@ var ctx = context.Background()
 // App struct para injeção de dependência
 type App struct {
 	RedisClient         *redis.Client
-	SqsSvc              *sqs.SQS
+	SqsSvc              *sqs.Client
 	SqsQueueURL         string
 	HttpClient          *http.Client
 	FlagServiceURL      string
@@ -28,7 +27,7 @@ type App struct {
 }
 
 func main() {
-	_ = godotenv.Load() // Carrega .env para dev local
+	_ = godotenv.Load()
 
 	// --- Configuração ---
 	port := os.Getenv("PORT")
@@ -54,9 +53,11 @@ func main() {
 	// SQS é opcional no dev local, mas obrigatório em prod
 	sqsQueueURL := os.Getenv("AWS_SQS_URL")
 	awsRegion := os.Getenv("AWS_REGION")
+
 	if sqsQueueURL == "" {
 		log.Println("Atenção: AWS_SQS_URL não definida. Eventos não serão enviados.")
 	}
+
 	if awsRegion == "" && sqsQueueURL != "" {
 		log.Fatal("AWS_REGION deve ser definida para usar SQS")
 	}
@@ -68,24 +69,33 @@ func main() {
 	if err != nil {
 		log.Fatalf("Não foi possível parsear a URL do Redis: %v", err)
 	}
+
 	rdb := redis.NewClient(opt)
+
 	if _, err := rdb.Ping(ctx).Result(); err != nil {
 		log.Fatalf("Não foi possível conectar ao Redis: %v", err)
 	}
+
 	log.Println("Conectado ao Redis com sucesso!")
 
-	// Cliente SQS (AWS SDK)
-	var sqsSvc *sqs.SQS
+	// Cliente SQS
+	var sqsSvc *sqs.Client
+
 	if sqsQueueURL != "" {
-		sess, err := session.NewSession(&aws.Config{Region: aws.String(awsRegion)})
+		cfg, err := config.LoadDefaultConfig(
+			ctx,
+			config.WithRegion(awsRegion),
+		)
 		if err != nil {
-			log.Fatalf("Não foi possível criar sessão AWS: %v", err)
+			log.Fatalf("Não foi possível criar configuração AWS: %v", err)
 		}
-		sqsSvc = sqs.New(sess)
+
+		sqsSvc = sqs.NewFromConfig(cfg)
+
 		log.Println("Cliente SQS inicializado com sucesso.")
 	}
 
-	// Cliente HTTP (com timeout)
+	// Cliente HTTP
 	httpClient := &http.Client{
 		Timeout: 5 * time.Second,
 	}
@@ -106,6 +116,7 @@ func main() {
 	mux.HandleFunc("/evaluate", app.evaluationHandler)
 
 	log.Printf("Serviço de Avaliação (Go) rodando na porta %s", port)
+
 	if err := http.ListenAndServe(":"+port, mux); err != nil {
 		log.Fatal(err)
 	}
