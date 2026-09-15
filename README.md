@@ -312,5 +312,3 @@ toggle-master/evaluation-service
 ```
 
 A publicação no ECR conclui a etapa de **CI e geração do artefato** deste serviço.
-
-O deployment no Kubernetes/EKS e a sincronização através do GitOps/ArgoCD pertencem à etapa posterior de entrega/deploy da solução.
